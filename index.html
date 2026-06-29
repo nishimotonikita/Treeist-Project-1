@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bridge Alert - Route Planner</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    header span { font-size: 1.4rem; }
+
+    .app {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 340px;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .section {
+      padding: 16px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .section h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: #4f7ef7; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .input-row label {
+      font-size: 0.8rem;
+      color: #888;
+      width: 40px;
+      flex-shrink: 0;
+    }
+
+    button {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4f7ef7;
+      color: white;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover { background: #3a6ae8; }
+    .btn-primary:disabled { background: #a0b4f0; cursor: not-allowed; }
+
+    .btn-danger {
+      background: #ff4d4d;
+      color: white;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-danger:hover { background: #e03a3a; }
+
+    .btn-secondary {
+      background: #f0f2f5;
+      color: #333;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-secondary:hover { background: #e0e2e5; }
+
+    .alert-box {
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .alert-danger {
+      background: #fff0f0;
+      border: 1.5px solid #ff4d4d;
+      color: #c0392b;
+    }
+
+    .alert-success {
+      background: #f0fff4;
+      border: 1.5px solid #27ae60;
+      color: #1e8449;
+    }
+
+    .alert-info {
+      background: #f0f4ff;
+      border: 1.5px solid #4f7ef7;
+      color: #2c5ae8;
+    }
+
+    .alert-box.show { display: block; }
+
+    .bridge-list {
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .bridge-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      background: #f8f9fa;
+      font-size: 0.85rem;
+    }
+
+    .bridge-item .bridge-name {
+      font-weight: 500;
+      color: #333;
+      flex: 1;
+      margin-right: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bridge-item .bridge-clearance {
+      color: #e65c00;
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .bridge-item .btn-remove {
+      background: none;
+      color: #ccc;
+      padding: 2px 6px;
+      font-size: 0.9rem;
+      margin-left: 4px;
+      border-radius: 4px;
+      width: auto;
+    }
+
+    .bridge-item .btn-remove:hover { color: #ff4d4d; background: #fff0f0; }
+
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85rem;
+      padding: 16px 0;
+    }
+
+    #map {
+      flex: 1;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      padding: 6px 0;
+    }
+
+    .loading.show { display: block; }
+
+    .kml-label {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px 16px;
+      background: #f0f2f5;
+      color: #333;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .kml-label:hover { background: #e0e2e5; }
+
+    #kml-input { display: none; }
+
+    .warning-list { margin-top: 8px; }
+
+    .warning-item {
+      background: #fff5f0;
+      border-left: 3px solid #ff6b35;
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    .warning-item strong { color: #c0392b; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #ff4d4d;
+      color: white;
+      margin-left: 6px;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .stat-box .stat-num {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .stat-box .stat-label {
+      font-size: 0.72rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .threshold-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .threshold-row label {
+      font-size: 0.85rem;
+      color: #555;
+      flex: 1;
+    }
+
+    .threshold-row input {
+      width: 70px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🌉</span>
+  <h1>Bridge Alert — Route Planner</h1>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+
+    <!-- Route Planning -->
+    <div class="section">
+      <h2>Plan Route</h2>
+      <div class="input-row">
+        <label>From</label>
+        <input type="text" id="origin" placeholder="Start address or city" />
+      </div>
+      <div class="input-row">
+        <label>To</label>
+        <input type="text" id="destination" placeholder="End address or city" />
+      </div>
+      <div class="loading" id="route-loading">Calculating route…</div>
+      <button class="btn-primary" id="calc-route-btn" onclick="calcRoute()">Calculate Route</button>
+      <button class="btn-secondary" id="clear-route-btn" onclick="clearRoute()" style="display:none">Clear Route</button>
+
+      <div class="alert-box" id="route-alert"></div>
+
+      <div id="warnings-section" style="display:none">
+        <div style="font-size:0.85rem;font-weight:600;margin-top:12px;color:#c0392b;">
+          ⚠️ Low Bridges on This Route <span class="badge" id="warning-count">0</span>
+        </div>
+        <div class="warning-list" id="warning-list"></div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-bridges">0</div>
+          <div class="stat-label">Bridges Flagged</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-warnings">—</div>
+          <div class="stat-label">On Current Route</div>
+        </div>
+      </div>
+      <div class="threshold-row">
+        <label>Alert radius around bridge (miles)</label>
+        <input type="number" id="threshold" value="0.1" step="0.05" min="0.01" max="2" style="width:70px" />
+      </div>
+    </div>
+
+    <!-- Add Bridge -->
+    <div class="section">
+      <h2>Add Bridge Manually</h2>
+      <div style="margin-bottom:8px">
+        <input type="text" id="new-bridge-name" placeholder="Bridge name / road" />
+      </div>
+      <div class="input-row">
+        <label>Ht.</label>
+        <input type="text" id="new-bridge-height" placeholder='e.g. 11\'6"' />
+      </div>
+      <p style="font-size:0.78rem;color:#aaa;margin-bottom:6px">Then click a location on the map to place it.</p>
+      <button class="btn-primary" id="add-bridge-btn" onclick="startAddBridge()">📍 Click Map to Place</button>
+    </div>
+
+    <!-- Import KML -->
+    <div class="section">
+      <h2>Import from Google My Maps</h2>
+      <p style="font-size:0.8rem;color:#888;margin-bottom:6px">
+        Export your map as KML (Google My Maps → ⋮ → Export to KML/KMZ) then import here.
+      </p>
+      <label class="kml-label" for="kml-input">📂 Import KML / KMZ file</label>
+      <input type="file" id="kml-input" accept=".kml,.kmz" onchange="importKML(event)" />
+    </div>
+
+    <!-- Bridge List -->
+    <div class="section">
+      <h2>Flagged Bridges</h2>
+      <div class="bridge-list" id="bridge-list">
+        <div class="empty-state">No bridges added yet.</div>
+      </div>
+      <button class="btn-danger" onclick="clearAllBridges()" style="margin-top:8px">🗑 Clear All Bridges</button>
+    </div>
+
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Map setup ──────────────────────────────────────────────────────────────
+const map = L.map('map').setView([35.5, -78.5], 8);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19,
+}).addTo(map);
+
+// ── State ──────────────────────────────────────────────────────────────────
+let bridges = [];        // { id, name, height, lat, lng, marker }
+let routeLayer = null;
+let routeCoords = [];
+let placingBridge = false;
+let bridgeIdCounter = 0;
+
+// Bridge icon
+const bridgeIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    background:#ff4d4d;color:white;border-radius:50%;
+    width:28px;height:28px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    border:2px solid white;cursor:pointer;">🌉</div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
+const warningIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    background:#ff6b35;color:white;border-radius:50%;
+    width:34px;height:34px;display:flex;align-items:center;
+    justify-content:center;font-size:18px;
+    box-shadow:0 2px 10px rgba(255,107,53,0.6);
+    border:3px solid white;cursor:pointer;
+    animation:pulse 1s infinite alternate;">⚠️</div>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+});
+
+// ── Bridge management ──────────────────────────────────────────────────────
+function addBridge(lat, lng, name, height) {
+  const id = ++bridgeIdCounter;
+  const marker = L.marker([lat, lng], { icon: bridgeIcon })
+    .addTo(map)
+    .bindPopup(`<b>${name || 'Low Bridge'}</b><br>Clearance: <b style="color:#e65c00">${height || 'Unknown'}</b>`);
+  bridges.push({ id, name, height, lat, lng, marker });
+  renderBridgeList();
+  updateStats();
+}
+
+function removeBridge(id) {
+  const idx = bridges.findIndex(b => b.id === id);
+  if (idx === -1) return;
+  map.removeLayer(bridges[idx].marker);
+  bridges.splice(idx, 1);
+  renderBridgeList();
+  updateStats();
+  if (routeCoords.length) checkBridgesOnRoute();
+}
+
+function clearAllBridges() {
+  bridges.forEach(b => map.removeLayer(b.marker));
+  bridges = [];
+  renderBridgeList();
+  updateStats();
+  if (routeCoords.length) checkBridgesOnRoute();
+}
+
+function renderBridgeList() {
+  const el = document.getElementById('bridge-list');
+  if (!bridges.length) {
+    el.innerHTML = '<div class="empty-state">No bridges added yet.</div>';
+    return;
+  }
+  el.innerHTML = bridges.map(b => `
+    <div class="bridge-item">
+      <span class="bridge-name">${b.name || 'Unnamed'}</span>
+      <span class="bridge-clearance">${b.height || '?'}</span>
+      <button class="btn-remove" onclick="removeBridge(${b.id})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  document.getElementById('stat-bridges').textContent = bridges.length;
+}
+
+// ── Add bridge by clicking map ─────────────────────────────────────────────
+function startAddBridge() {
+  const name = document.getElementById('new-bridge-name').value.trim();
+  const height = document.getElementById('new-bridge-height').value.trim();
+  if (!name) { alert('Please enter a bridge name first.'); return; }
+  placingBridge = { name, height };
+  map.getContainer().style.cursor = 'crosshair';
+  document.getElementById('add-bridge-btn').textContent = '🖱 Click on the map…';
+  document.getElementById('add-bridge-btn').disabled = true;
+}
+
+map.on('click', function(e) {
+  if (!placingBridge) return;
+  addBridge(e.latlng.lat, e.latlng.lng, placingBridge.name, placingBridge.height);
+  placingBridge = false;
+  map.getContainer().style.cursor = '';
+  document.getElementById('add-bridge-btn').textContent = '📍 Click Map to Place';
+  document.getElementById('add-bridge-btn').disabled = false;
+  document.getElementById('new-bridge-name').value = '';
+  document.getElementById('new-bridge-height').value = '';
+  if (routeCoords.length) checkBridgesOnRoute();
+});
+
+// ── KML Import ─────────────────────────────────────────────────────────────
+function importKML(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let text = e.target.result;
+
+    // Handle KMZ (zip containing doc.kml) - basic check
+    if (file.name.endsWith('.kmz')) {
+      showAlert('route-alert', 'KMZ files need to be unzipped first. Rename to .zip, extract the doc.kml file inside, then import that .kml file.', 'info');
+      return;
+    }
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    const placemarks = xml.querySelectorAll('Placemark');
+    let count = 0;
+
+    placemarks.forEach(pm => {
+      const nameEl = pm.querySelector('name');
+      const name = nameEl ? nameEl.textContent.trim() : 'Low Bridge';
+      const pointEl = pm.querySelector('Point coordinates');
+      if (!pointEl) return;
+
+      const coords = pointEl.textContent.trim().split(',');
+      if (coords.length < 2) return;
+
+      const lng = parseFloat(coords[0]);
+      const lat = parseFloat(coords[1]);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      // Try to extract clearance from description
+      const descEl = pm.querySelector('description');
+      let height = '';
+      if (descEl) {
+        const m = descEl.textContent.match(/(\d+['′]\s*\d*["″]?|\d+\.\d+\s*ft|\d+\s*ft)/i);
+        if (m) height = m[0];
+      }
+
+      addBridge(lat, lng, name, height);
+      count++;
+    });
+
+    if (count > 0) {
+      showAlert('route-alert', `✅ Imported ${count} bridge${count > 1 ? 's' : ''} from KML.`, 'success');
+      if (count > 0) map.fitBounds(L.featureGroup(bridges.map(b => b.marker)).getBounds().pad(0.1));
+    } else {
+      showAlert('route-alert', 'No point placemarks found in the KML file.', 'info');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── Routing ────────────────────────────────────────────────────────────────
+async function geocode(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  const data = await res.json();
+  if (!data.length) throw new Error(`Could not find location: "${address}"`);
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+async function calcRoute() {
+  const origin = document.getElementById('origin').value.trim();
+  const dest = document.getElementById('destination').value.trim();
+  if (!origin || !dest) { showAlert('route-alert', 'Please enter both a start and end address.', 'danger'); return; }
+
+  clearRoute(true);
+  document.getElementById('route-loading').classList.add('show');
+  document.getElementById('calc-route-btn').disabled = true;
+
+  try {
+    const [from, to] = await Promise.all([geocode(origin), geocode(dest)]);
+
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const res = await fetch(osrmUrl);
+    const data = await res.json();
+
+    if (data.code !== 'Ok') throw new Error('Could not calculate route.');
+
+    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    routeCoords = coords;
+
+    routeLayer = L.polyline(coords, { color: '#4f7ef7', weight: 5, opacity: 0.8 }).addTo(map);
+
+    // Start/end markers
+    L.circleMarker(coords[0], { radius: 8, color: '#27ae60', fillColor: '#2ecc71', fillOpacity: 1, weight: 2 })
+      .addTo(map).bindPopup(`<b>Start</b><br>${from.display}`);
+    L.circleMarker(coords[coords.length - 1], { radius: 8, color: '#e74c3c', fillColor: '#ff4d4d', fillOpacity: 1, weight: 2 })
+      .addTo(map).bindPopup(`<b>End</b><br>${to.display}`);
+
+    map.fitBounds(routeLayer.getBounds().pad(0.1));
+
+    const dist = (data.routes[0].distance / 1609.34).toFixed(1);
+    const dur = Math.round(data.routes[0].duration / 60);
+    showAlert('route-alert', `Route: ${dist} mi · ~${dur} min`, 'success');
+
+    document.getElementById('clear-route-btn').style.display = 'block';
+    checkBridgesOnRoute();
+
+  } catch(err) {
+    showAlert('route-alert', '❌ ' + err.message, 'danger');
+  } finally {
+    document.getElementById('route-loading').classList.remove('show');
+    document.getElementById('calc-route-btn').disabled = false;
+  }
+}
+
+function clearRoute(silent) {
+  if (routeLayer) { map.eachLayer(l => { if (l !== routeLayer && l._latlng && !bridges.find(b => b.marker === l)) return; }); map.removeLayer(routeLayer); routeLayer = null; }
+  // Remove all non-bridge markers (start/end dots)
+  map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
+  routeCoords = [];
+  document.getElementById('clear-route-btn').style.display = 'none';
+  document.getElementById('warnings-section').style.display = 'none';
+  document.getElementById('stat-warnings').textContent = '—';
+  // Reset bridge icons
+  bridges.forEach(b => b.marker.setIcon(bridgeIcon));
+  if (!silent) hideAlert('route-alert');
+}
+
+// ── Bridge proximity check ─────────────────────────────────────────────────
+function pointToSegmentDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx*dx + dy*dy;
+  let t = lenSq === 0 ? 0 : ((px - ax)*dx + (py - ay)*dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const nearX = ax + t*dx, nearY = ay + t*dy;
+  return Math.sqrt((px-nearX)**2 + (py-nearY)**2);
+}
+
+function latlngDistMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function isBridgeNearRoute(bridge, threshold) {
+  for (let i = 0; i < routeCoords.length - 1; i++) {
+    const [a, b] = [routeCoords[i], routeCoords[i+1]];
+    // Approximate degree-to-mile (good enough for proximity)
+    const latMid = (a[0] + b[0]) / 2;
+    const cosLat = Math.cos(latMid * Math.PI / 180);
+    const degPerMile = 1 / 69.0;
+    const ax = a[1] * cosLat, ay = a[0];
+    const bx = b[1] * cosLat, by = b[0];
+    const px = bridge.lng * cosLat, py = bridge.lat;
+    const degDist = pointToSegmentDist(px, py, ax, ay, bx, by);
+    const mileDist = degDist / degPerMile;
+    if (mileDist <= threshold) return mileDist;
+  }
+  return null;
+}
+
+function checkBridgesOnRoute() {
+  const threshold = parseFloat(document.getElementById('threshold').value) || 0.1;
+  const warnings = [];
+
+  bridges.forEach(b => {
+    b.marker.setIcon(bridgeIcon);
+    const dist = isBridgeNearRoute(b, threshold);
+    if (dist !== null) {
+      warnings.push({ bridge: b, dist });
+      b.marker.setIcon(warningIcon);
+    }
+  });
+
+  const warnSec = document.getElementById('warnings-section');
+  const warnList = document.getElementById('warning-list');
+  const warnCount = document.getElementById('warning-count');
+  const statWarn = document.getElementById('stat-warnings');
+
+  statWarn.textContent = warnings.length;
+
+  if (warnings.length === 0) {
+    warnSec.style.display = 'none';
+    showAlert('route-alert', '✅ No low bridges detected on this route.', 'success');
+    return;
+  }
+
+  warnSec.style.display = 'block';
+  warnCount.textContent = warnings.length;
+
+  warnList.innerHTML = warnings.map(w => `
+    <div class="warning-item" onclick="focusBridge(${w.bridge.id})" style="cursor:pointer">
+      <strong>⚠ ${w.bridge.name || 'Unnamed Bridge'}</strong><br>
+      Clearance: <b>${w.bridge.height || 'Unknown'}</b> · ~${(w.dist * 5280).toFixed(0)} ft from route
+    </div>
+  `).join('');
+
+  showAlert('route-alert', `⚠️ ${warnings.length} low bridge${warnings.length > 1 ? 's' : ''} near this route!`, 'danger');
+}
+
+function focusBridge(id) {
+  const b = bridges.find(x => x.id === id);
+  if (!b) return;
+  map.setView([b.lat, b.lng], 15);
+  b.marker.openPopup();
+}
+
+// ── Alert helpers ──────────────────────────────────────────────────────────
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert-box alert-${type} show`;
+}
+
+function hideAlert(id) {
+  document.getElementById(id).className = 'alert-box';
+}
+
+// ── Keyboard shortcut ──────────────────────────────────────────────────────
+document.getElementById('destination').addEventListener('keydown', e => { if (e.key === 'Enter') calcRoute(); });
+document.getElementById('origin').addEventListener('keydown', e => { if (e.key === 'Enter') calcRoute(); });
+
+// ── CSS pulse animation ────────────────────────────────────────────────────
+const style = document.createElement('style');
+style.textContent = `@keyframes pulse { from { box-shadow:0 2px 10px rgba(255,107,53,0.4); } to { box-shadow:0 2px 20px rgba(255,107,53,0.9); } }`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
