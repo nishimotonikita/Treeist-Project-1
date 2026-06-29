@@ -398,6 +398,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 // ── Map setup ──────────────────────────────────────────────────────────────
 const map = L.map('map').setView([35.5, -78.5], 8);
@@ -512,59 +513,69 @@ map.on('click', function(e) {
 });
 
 // ── KML Import ─────────────────────────────────────────────────────────────
+function parseKML(xml) {
+  const placemarks = xml.querySelectorAll('Placemark');
+  let count = 0;
+
+  placemarks.forEach(pm => {
+    const nameEl = pm.querySelector('name');
+    const name = nameEl ? nameEl.textContent.trim() : 'Low Bridge';
+    const pointEl = pm.querySelector('Point coordinates');
+    if (!pointEl) return;
+
+    const coords = pointEl.textContent.trim().split(',');
+    if (coords.length < 2) return;
+
+    const lng = parseFloat(coords[0]);
+    const lat = parseFloat(coords[1]);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    const descEl = pm.querySelector('description');
+    let height = '';
+    if (descEl) {
+      const m = descEl.textContent.match(/(\d+['′]\s*\d*["″]?|\d+\.\d+\s*ft|\d+\s*ft)/i);
+      if (m) height = m[0];
+    }
+
+    addBridge(lat, lng, name, height);
+    count++;
+  });
+
+  if (count > 0) {
+    showAlert('route-alert', `✅ Imported ${count} bridge${count > 1 ? 's' : ''} from KML.`, 'success');
+    map.fitBounds(L.featureGroup(bridges.map(b => b.marker)).getBounds().pad(0.1));
+  } else {
+    showAlert('route-alert', 'No point placemarks found in the KML file.', 'info');
+  }
+}
+
 function importKML(event) {
   const file = event.target.files[0];
   if (!file) return;
+  event.target.value = '';
+
+  if (file.name.endsWith('.kmz')) {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const zip = await JSZip.loadAsync(e.target.result);
+        const kmlFile = Object.values(zip.files).find(f => f.name.endsWith('.kml'));
+        if (!kmlFile) { showAlert('route-alert', 'No KML file found inside the KMZ.', 'danger'); return; }
+        const text = await kmlFile.async('string');
+        parseKML(new DOMParser().parseFromString(text, 'text/xml'));
+      } catch(err) {
+        showAlert('route-alert', 'Failed to read KMZ file: ' + err.message, 'danger');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = function(e) {
-    let text = e.target.result;
-
-    // Handle KMZ (zip containing doc.kml) - basic check
-    if (file.name.endsWith('.kmz')) {
-      showAlert('route-alert', 'KMZ files need to be unzipped first. Rename to .zip, extract the doc.kml file inside, then import that .kml file.', 'info');
-      return;
-    }
-
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'text/xml');
-    const placemarks = xml.querySelectorAll('Placemark');
-    let count = 0;
-
-    placemarks.forEach(pm => {
-      const nameEl = pm.querySelector('name');
-      const name = nameEl ? nameEl.textContent.trim() : 'Low Bridge';
-      const pointEl = pm.querySelector('Point coordinates');
-      if (!pointEl) return;
-
-      const coords = pointEl.textContent.trim().split(',');
-      if (coords.length < 2) return;
-
-      const lng = parseFloat(coords[0]);
-      const lat = parseFloat(coords[1]);
-      if (isNaN(lat) || isNaN(lng)) return;
-
-      // Try to extract clearance from description
-      const descEl = pm.querySelector('description');
-      let height = '';
-      if (descEl) {
-        const m = descEl.textContent.match(/(\d+['′]\s*\d*["″]?|\d+\.\d+\s*ft|\d+\s*ft)/i);
-        if (m) height = m[0];
-      }
-
-      addBridge(lat, lng, name, height);
-      count++;
-    });
-
-    if (count > 0) {
-      showAlert('route-alert', `✅ Imported ${count} bridge${count > 1 ? 's' : ''} from KML.`, 'success');
-      if (count > 0) map.fitBounds(L.featureGroup(bridges.map(b => b.marker)).getBounds().pad(0.1));
-    } else {
-      showAlert('route-alert', 'No point placemarks found in the KML file.', 'info');
-    }
+    parseKML(new DOMParser().parseFromString(e.target.result, 'text/xml'));
   };
   reader.readAsText(file);
-  event.target.value = '';
 }
 
 // ── Routing ────────────────────────────────────────────────────────────────
