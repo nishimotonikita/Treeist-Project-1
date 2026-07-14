@@ -486,6 +486,29 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, push, remove, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyByRYHuOsy_IJg2NmYxDUG_WV2OMpI1Ahk",
+  authDomain: "bridge-alert-b7e8e.firebaseapp.com",
+  databaseURL: "https://bridge-alert-b7e8e-default-rtdb.firebaseio.com",
+  projectId: "bridge-alert-b7e8e",
+  storageBucket: "bridge-alert-b7e8e.firebasestorage.app",
+  messagingSenderId: "700919429407",
+  appId: "1:700919429407:web:db8a9435aac3531afd182a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const bridgesRef = ref(db, 'bridges');
+
+// Expose Firebase ops to global scope for the rest of the script
+window._fb = { db, ref, onValue, push, remove, set, bridgesRef };
+window._fbReady = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
 <script>
 // ── Service Worker ─────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -544,57 +567,56 @@ const warningIcon = L.divIcon({
   iconSize: [34,34], iconAnchor: [17,17]
 });
 
-// ── Persistence ────────────────────────────────────────────────────────────
-function saveBridges() {
-  const data = bridges.map(({ id, name, height, lat, lng }) => ({ id, name, height, lat, lng }));
-  localStorage.setItem('bridge-alert-bridges', JSON.stringify(data));
-  localStorage.setItem('bridge-alert-counter', bridgeIdCounter);
+// ── Persistence (Firebase) ─────────────────────────────────────────────────
+function saveBridgeToFB(lat, lng, name, height) {
+  const { push, bridgesRef } = window._fb;
+  return push(bridgesRef, { lat, lng, name: name || '', height: height || '' });
+}
+
+function removeBridgeFromFB(fbKey) {
+  const { ref, remove, db } = window._fb;
+  return remove(ref(db, 'bridges/' + fbKey));
+}
+
+function clearAllBridgesInFB() {
+  const { set, bridgesRef } = window._fb;
+  return set(bridgesRef, null);
 }
 
 function loadBridges() {
-  try {
-    const data = JSON.parse(localStorage.getItem('bridge-alert-bridges') || '[]');
-    bridgeIdCounter = parseInt(localStorage.getItem('bridge-alert-counter') || '0');
-    data.forEach(b => {
-      const marker = L.marker([b.lat, b.lng], { icon: bridgeIcon })
-        .addTo(map)
-        .bindPopup(`<b>${b.name || 'Low Bridge'}</b><br>Clearance: <b style="color:#e65c00">${b.height || 'Unknown'}</b>`);
-      bridges.push({ ...b, marker });
-    });
+  const { onValue, bridgesRef } = window._fb;
+  onValue(bridgesRef, snapshot => {
+    // Clear existing markers
+    bridges.forEach(b => map.removeLayer(b.marker));
+    bridges = [];
+
+    const data = snapshot.val();
+    if (data) {
+      Object.entries(data).forEach(([fbKey, b]) => {
+        const marker = L.marker([b.lat, b.lng], { icon: bridgeIcon })
+          .addTo(map)
+          .bindPopup(`<b>${b.name || 'Low Bridge'}</b><br>Clearance: <b style="color:#e65c00">${b.height || 'Unknown'}</b>`);
+        bridges.push({ fbKey, name: b.name, height: b.height, lat: b.lat, lng: b.lng, marker });
+      });
+    }
     renderBridgeList();
     updateBadge();
-  } catch(e) {}
+  });
 }
 
 // ── Bridge management ──────────────────────────────────────────────────────
-function addBridge(lat, lng, name, height, skipSave) {
-  const id = ++bridgeIdCounter;
-  const marker = L.marker([lat, lng], { icon: bridgeIcon })
-    .addTo(map)
-    .bindPopup(`<b>${name || 'Low Bridge'}</b><br>Clearance: <b style="color:#e65c00">${height || 'Unknown'}</b>`);
-  bridges.push({ id, name, height, lat, lng, marker });
-  renderBridgeList();
-  updateBadge();
-  if (!skipSave) saveBridges();
+function addBridge(lat, lng, name, height) {
+  // Firebase onValue listener will handle updating the UI
+  saveBridgeToFB(lat, lng, name, height);
 }
 
-function removeBridge(id) {
-  const idx = bridges.findIndex(b => b.id === id);
-  if (idx === -1) return;
-  map.removeLayer(bridges[idx].marker);
-  bridges.splice(idx, 1);
-  renderBridgeList();
-  updateBadge();
-  saveBridges();
+function removeBridge(fbKey) {
+  removeBridgeFromFB(fbKey);
 }
 
 function clearAllBridges() {
   if (!confirm(`Remove all ${bridges.length} bridge${bridges.length !== 1 ? 's' : ''}?`)) return;
-  bridges.forEach(b => map.removeLayer(b.marker));
-  bridges = [];
-  renderBridgeList();
-  updateBadge();
-  saveBridges();
+  clearAllBridgesInFB();
 }
 
 function renderBridgeList() {
@@ -611,7 +633,7 @@ function renderBridgeList() {
         <div class="bridge-name">${b.name || 'Unnamed'}</div>
         <div class="bridge-ht">${b.height || 'Height unknown'}</div>
       </div>
-      <button class="btn-rm" onclick="removeBridge(${b.id})">✕</button>
+      <button class="btn-rm" onclick="removeBridge('${b.fbKey}')">✕</button>
     </div>
   `).join('');
 }
@@ -635,7 +657,7 @@ function startAddBridge() {
 
 map.on('click', function(e) {
   if (!placingBridge) return;
-  addBridge(e.latlng.lat, e.latlng.lng, placingBridge.name, placingBridge.height);
+  saveBridgeToFB(e.latlng.lat, e.latlng.lng, placingBridge.name, placingBridge.height);
   placingBridge = false;
   map.getContainer().style.cursor = '';
   document.getElementById('placing-banner').classList.remove('show');
@@ -658,10 +680,9 @@ function parseKML(xml) {
     if (isNaN(lat) || isNaN(lng)) return;
     const desc = pm.querySelector('description')?.textContent || '';
     const m = desc.match(/(\d+['′]\s*\d*["″]?|\d+\.\d+\s*ft|\d+\s*ft)/i);
-    addBridge(lat, lng, name, m ? m[0] : '', true);
+    saveBridgeToFB(lat, lng, name, m ? m[0] : '');
     count++;
   });
-  saveBridges();
   if (count > 0) {
     alert(`✅ Imported ${count} bridge${count > 1 ? 's' : ''}.`);
     if (bridges.length) map.fitBounds(L.featureGroup(bridges.map(b => b.marker)).getBounds().pad(0.1));
@@ -835,7 +856,11 @@ s.textContent = `@keyframes pulse { from { box-shadow:0 2px 10px rgba(255,107,53
 document.head.appendChild(s);
 
 // ── Init ───────────────────────────────────────────────────────────────────
-loadBridges();
+if (window._fbReady) {
+  loadBridges();
+} else {
+  window.addEventListener('fb-ready', loadBridges, { once: true });
+}
 </script>
 </body>
 </html>
