@@ -24,360 +24,220 @@
       overflow: hidden;
     }
 
-    /* ── Header ── */
     header {
       background: #1a1a2e;
       color: white;
       padding: 14px 16px;
+      padding-top: max(14px, env(safe-area-inset-top));
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
       flex-shrink: 0;
-      padding-top: max(14px, env(safe-area-inset-top));
     }
 
     .header-left { display: flex; align-items: center; gap: 10px; }
     header h1 { font-size: 1.1rem; font-weight: 700; }
 
-    .tab-bar {
-      display: flex;
-      background: #252547;
-      flex-shrink: 0;
-    }
-
+    .tab-bar { display: flex; background: #252547; flex-shrink: 0; }
     .tab {
-      flex: 1;
-      padding: 10px;
-      text-align: center;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #8888aa;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+      flex: 1; padding: 10px; text-align: center;
+      font-size: 0.78rem; font-weight: 600; color: #8888aa;
+      cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
     }
-
     .tab.active { color: white; border-bottom-color: #4f7ef7; }
 
-    /* ── Panels ── */
     .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
     .panel.active { display: flex; }
 
-    /* ── Check Route panel ── */
-    .check-panel {
-      padding: 16px;
-      gap: 12px;
-      overflow-y: auto;
-    }
+    /* ── Check panel ── */
+    .check-panel { padding: 16px; gap: 12px; overflow-y: auto; }
 
     .input-group {
-      background: white;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      background: white; border-radius: 14px; overflow: visible;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative;
     }
 
     .input-row {
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-      border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center;
+      padding: 0 14px; border-bottom: 1px solid #f0f0f0; position: relative;
     }
-
     .input-row:last-child { border-bottom: none; }
 
-    .input-row .dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      flex-shrink: 0; margin-right: 12px;
-    }
-
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-right: 12px; }
     .dot-green { background: #27ae60; }
     .dot-red { background: #e74c3c; }
 
     .input-row input {
-      flex: 1;
-      padding: 14px 0;
-      border: none;
-      font-size: 1rem;
-      outline: none;
-      background: transparent;
-      color: #1a1a2e;
+      flex: 1; padding: 14px 0; border: none;
+      font-size: 1rem; outline: none; background: transparent; color: #1a1a2e;
     }
-
     .input-row input::placeholder { color: #bbb; }
 
     .btn-location {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 4px;
-      color: #4f7ef7;
+      background: none; border: none; font-size: 1.2rem;
+      cursor: pointer; padding: 4px; color: #4f7ef7; flex-shrink: 0;
     }
 
-    /* ── Big action button ── */
+    /* Autocomplete dropdown */
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: white; border-radius: 0 0 14px 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 9999; overflow: hidden; display: none;
+    }
+    .autocomplete-list.show { display: block; }
+    .autocomplete-item {
+      padding: 12px 14px; font-size: 0.88rem; color: #333;
+      cursor: pointer; border-bottom: 1px solid #f5f5f5;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:active { background: #f0f4ff; }
+    .autocomplete-item .ac-main { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .autocomplete-item .ac-sub { font-size: 0.78rem; color: #999; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     .btn-check {
-      background: #4f7ef7;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      padding: 16px;
-      font-size: 1rem;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      transition: background 0.2s;
-      letter-spacing: 0.02em;
+      background: #4f7ef7; color: white; border: none; border-radius: 14px;
+      padding: 16px; font-size: 1rem; font-weight: 700; width: 100%;
+      cursor: pointer; transition: background 0.2s; letter-spacing: 0.02em;
     }
-
     .btn-check:active { background: #3a6ae8; }
     .btn-check:disabled { background: #a0b4f0; }
 
-    /* ── Result card ── */
-    .result-card {
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      display: none;
+    .loading-row {
+      display: none; align-items: center; justify-content: center;
+      gap: 10px; padding: 8px; color: #888; font-size: 0.9rem;
     }
+    .loading-row.show { display: flex; }
 
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #ddd;
+      border-top-color: #4f7ef7; border-radius: 50%;
+      animation: spin 0.7s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result cards */
+    .result-card { border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none; }
     .result-card.show { display: block; }
 
     .result-header {
-      padding: 14px 16px;
-      font-weight: 700;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding: 14px 16px; font-weight: 700; font-size: 1rem;
+      display: flex; align-items: center; gap: 8px;
     }
-
     .result-safe { background: #eafaf1; color: #1e8449; }
-    .result-warning { background: #fff3cd; color: #856404; }
     .result-danger { background: #fff0f0; color: #c0392b; }
-    .result-info { background: #f0f4ff; color: #2c5ae8; }
 
     .warning-list { background: white; }
-
     .warning-item {
-      padding: 12px 16px;
-      border-bottom: 1px solid #f5f5f5;
-      font-size: 0.9rem;
+      padding: 12px 16px; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem;
     }
-
     .warning-item:last-child { border-bottom: none; }
     .warning-item strong { color: #c0392b; display: block; margin-bottom: 2px; }
     .warning-item span { color: #888; font-size: 0.82rem; }
 
-    .btn-gmaps {
-      background: #1a73e8;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      padding: 15px 16px;
-      font-size: 1rem;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background 0.2s;
-      text-decoration: none;
+    /* Route buttons */
+    .route-buttons { display: none; flex-direction: column; gap: 8px; }
+    .route-buttons.show { display: flex; }
+
+    .btn-route {
+      border: none; border-radius: 14px; padding: 15px 16px;
+      font-size: 0.95rem; font-weight: 700; width: 100%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; transition: background 0.2s; text-decoration: none;
     }
+    .btn-route-primary { background: #1a73e8; color: white; }
+    .btn-route-primary:active { background: #1557b0; }
+    .btn-route-alt { background: #27ae60; color: white; }
+    .btn-route-alt:active { background: #1e8449; }
 
-    .btn-gmaps.show { display: flex; }
-    .btn-gmaps:active { background: #1557b0; }
-
-    .loading-row {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 8px;
-      color: #888;
-      font-size: 0.9rem;
-    }
-
-    .loading-row.show { display: flex; }
-
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid #ddd;
-      border-top-color: #4f7ef7;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Alternate route card */
+    .alt-card { border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none; }
+    .alt-card.show { display: block; }
+    .alt-header { background: #f0fff4; color: #1e8449; padding: 12px 16px; font-weight: 700; font-size: 0.95rem; border-bottom: 1px solid #d5f5e3; }
+    .alt-body { background: white; padding: 12px 16px; font-size: 0.85rem; color: #555; }
 
     /* ── Manage panel ── */
     .manage-panel { overflow-y: auto; }
 
     .section {
-      background: white;
-      margin: 12px;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      background: white; margin: 12px; border-radius: 14px;
+      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-
     .section-header {
-      padding: 12px 16px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #888;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 12px 16px; font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #888;
+      border-bottom: 1px solid #f0f0f0; display: flex; align-items: center;
     }
-
     .section-body { padding: 12px 16px; }
 
-    .field-row {
-      margin-bottom: 10px;
-    }
-
-    .field-row label {
-      font-size: 0.8rem;
-      color: #555;
-      display: block;
-      margin-bottom: 4px;
-      font-weight: 500;
-    }
-
+    .field-row { margin-bottom: 10px; }
+    .field-row label { font-size: 0.8rem; color: #555; display: block; margin-bottom: 4px; font-weight: 500; }
     .field-row input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #e8e8e8;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      outline: none;
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e8e8e8;
+      border-radius: 10px; font-size: 0.95rem; outline: none;
     }
-
     .field-row input:focus { border-color: #4f7ef7; }
 
     .hint { font-size: 0.78rem; color: #aaa; margin-bottom: 10px; }
 
     .btn-action {
-      padding: 11px 16px;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.2s;
+      padding: 11px 16px; border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.2s;
     }
-
     .btn-blue { background: #4f7ef7; color: white; }
     .btn-blue:active { background: #3a6ae8; }
     .btn-red { background: #ff4d4d; color: white; margin-top: 8px; }
     .btn-red:active { background: #e03a3a; }
-    .btn-gray { background: #f0f2f5; color: #333; margin-top: 8px; }
-    .btn-gray:active { background: #e0e2e5; }
 
     .kml-label {
-      display: block;
-      padding: 11px 16px;
-      background: #f0f2f5;
-      color: #333;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-align: center;
-      transition: background 0.2s;
+      display: block; padding: 11px 16px; background: #f0f2f5; color: #333;
+      border-radius: 10px; cursor: pointer; font-size: 0.9rem;
+      font-weight: 600; text-align: center; transition: background 0.2s;
     }
-
     .kml-label:active { background: #e0e2e5; }
     #kml-input { display: none; }
 
-    /* ── Bridge list ── */
+    /* Bridge list */
     .bridge-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 16px;
-      border-bottom: 1px solid #f5f5f5;
-      gap: 10px;
+      display: flex; align-items: center; padding: 10px 16px;
+      border-bottom: 1px solid #f5f5f5; gap: 10px;
     }
-
     .bridge-item:last-child { border-bottom: none; }
-
     .bridge-icon { font-size: 1.1rem; flex-shrink: 0; }
-
     .bridge-info { flex: 1; min-width: 0; }
     .bridge-name { font-size: 0.9rem; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bridge-ht { font-size: 0.8rem; color: #e65c00; font-weight: 600; }
-
-    .btn-rm {
-      background: none;
-      border: none;
-      color: #ccc;
-      font-size: 1.1rem;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      flex-shrink: 0;
-    }
-
+    .btn-rm { background: none; border: none; color: #ccc; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; }
     .btn-rm:active { background: #fff0f0; color: #ff4d4d; }
 
-    .empty-state {
-      text-align: center;
-      color: #bbb;
-      font-size: 0.88rem;
-      padding: 20px 0;
-    }
+    .empty-state { text-align: center; color: #bbb; font-size: 0.88rem; padding: 20px 0; }
 
     .badge-count {
-      background: #4f7ef7;
-      color: white;
-      border-radius: 10px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      margin-left: 6px;
+      background: #4f7ef7; color: white; border-radius: 10px;
+      font-size: 0.72rem; font-weight: 700; padding: 2px 7px; margin-left: 6px;
     }
 
-    /* ── Map panel ── */
+    /* Map panel */
     .map-panel { position: relative; }
     #map { width: 100%; height: 100%; }
 
     .map-placing-banner {
-      position: absolute;
-      top: 12px; left: 50%; transform: translateX(-50%);
-      background: #1a1a2e;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      z-index: 1000;
-      display: none;
-      white-space: nowrap;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      background: #1a1a2e; color: white; padding: 10px 18px; border-radius: 20px;
+      font-size: 0.88rem; font-weight: 600; z-index: 1000; display: none;
+      white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
-
     .map-placing-banner.show { display: block; }
 
-    /* ── Install prompt ── */
+    /* Install bar */
     .install-bar {
-      background: #1a1a2e;
-      color: white;
-      padding: 10px 16px;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
+      background: #252547; color: white; padding: 10px 16px;
+      display: none; align-items: center; gap: 10px; flex-shrink: 0;
     }
-
     .install-bar.show { display: flex; }
     .install-bar span { flex: 1; font-size: 0.85rem; }
     .btn-install { background: #4f7ef7; color: white; border: none; border-radius: 8px; padding: 7px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    .btn-install-dismiss { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; padding: 4px; }
+    .btn-install-x { background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; padding: 4px; }
   </style>
 </head>
 <body>
@@ -390,11 +250,10 @@
   <span id="bridge-count-badge" style="font-size:0.8rem;color:#8888aa">0 bridges</span>
 </header>
 
-<!-- PWA install prompt (shown on Android Chrome) -->
 <div class="install-bar" id="install-bar">
   <span>📲 Add to home screen for quick access</span>
   <button class="btn-install" id="install-btn">Install</button>
-  <button class="btn-install-dismiss" onclick="document.getElementById('install-bar').classList.remove('show')">✕</button>
+  <button class="btn-install-x" onclick="document.getElementById('install-bar').classList.remove('show')">✕</button>
 </div>
 
 <div class="tab-bar">
@@ -406,34 +265,50 @@
 <!-- CHECK ROUTE PANEL -->
 <div class="panel check-panel active" id="panel-check">
 
-  <div class="input-group">
-    <div class="input-row">
+  <div class="input-group" id="input-group">
+    <div class="input-row" id="origin-row">
       <div class="dot dot-green"></div>
-      <input type="text" id="origin" placeholder="Current location" />
-      <button class="btn-location" onclick="useMyLocation()" title="Use my location">📍</button>
+      <input type="text" id="origin" placeholder="Start (or tap 📍)" autocomplete="off" />
+      <button class="btn-location" onclick="useMyLocation()">📍</button>
+      <div class="autocomplete-list" id="origin-ac"></div>
     </div>
-    <div class="input-row">
+    <div class="input-row" id="dest-row">
       <div class="dot dot-red"></div>
-      <input type="text" id="destination" placeholder="Where to?" />
+      <input type="text" id="destination" placeholder="Where to?" autocomplete="off" />
+      <div class="autocomplete-list" id="dest-ac"></div>
     </div>
   </div>
 
   <div class="loading-row" id="route-loading">
     <div class="spinner"></div>
-    <span>Checking route for low bridges…</span>
+    <span id="loading-msg">Checking route for low bridges…</span>
   </div>
 
   <button class="btn-check" id="check-btn" onclick="checkRoute()">Check Route</button>
 
+  <!-- Primary route result -->
   <div class="result-card" id="result-card">
     <div class="result-header" id="result-header"></div>
     <div class="warning-list" id="warning-list"></div>
   </div>
 
-  <a class="btn-gmaps" id="gmaps-btn" target="_blank" rel="noopener">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-    Open in Google Maps
-  </a>
+  <!-- Alternate route result (shown when primary has bridges) -->
+  <div class="alt-card" id="alt-card">
+    <div class="alt-header" id="alt-header"></div>
+    <div class="alt-body" id="alt-body"></div>
+  </div>
+
+  <!-- Route action buttons -->
+  <div class="route-buttons" id="route-buttons">
+    <a class="btn-route btn-route-primary" id="gmaps-primary" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      Open in Google Maps
+    </a>
+    <a class="btn-route btn-route-alt" id="gmaps-alt" target="_blank" rel="noopener" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      Use Bridge-Free Route in Google Maps
+    </a>
+  </div>
 
 </div>
 
@@ -457,7 +332,7 @@
         <label>Clearance height</label>
         <input type="text" id="new-bridge-height" placeholder='e.g. 11&apos;6"' />
       </div>
-      <p class="hint">After filling in the fields, switch to the Map tab and tap the bridge location.</p>
+      <p class="hint">Fill in the fields, then switch to the Map tab and tap the bridge location.</p>
       <button class="btn-action btn-blue" onclick="startAddBridge()">📍 Place on Map</button>
     </div>
   </div>
@@ -465,7 +340,7 @@
   <div class="section">
     <div class="section-header">Import from Google My Maps</div>
     <div class="section-body">
-      <p class="hint">In Google My Maps, tap ⋮ → Export to KML/KMZ, then import here. Bridges are saved permanently.</p>
+      <p class="hint">In Google My Maps tap ⋮ → Export to KML/KMZ, then import here. Bridges sync to all devices.</p>
       <label class="kml-label" for="kml-input">📂 Import KML / KMZ file</label>
       <input type="file" id="kml-input" accept=".kml,.kmz" onchange="importKML(event)" />
     </div>
@@ -490,7 +365,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, onValue, push, remove, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
+const app = initializeApp({
   apiKey: "AIzaSyByRYHuOsy_IJg2NmYxDUG_WV2OMpI1Ahk",
   authDomain: "bridge-alert-b7e8e.firebaseapp.com",
   databaseURL: "https://bridge-alert-b7e8e-default-rtdb.firebaseio.com",
@@ -498,41 +373,40 @@ const firebaseConfig = {
   storageBucket: "bridge-alert-b7e8e.firebasestorage.app",
   messagingSenderId: "700919429407",
   appId: "1:700919429407:web:db8a9435aac3531afd182a"
-};
+});
 
-const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const bridgesRef = ref(db, 'bridges');
-
-// Expose Firebase ops to global scope for the rest of the script
 window._fb = { db, ref, onValue, push, remove, set, bridgesRef };
-window._fbReady = true;
 window.dispatchEvent(new Event('fb-ready'));
 </script>
+
 <script>
 // ── Service Worker ─────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-// ── PWA install prompt ─────────────────────────────────────────────────────
-let deferredInstallPrompt = null;
+// ── PWA install ────────────────────────────────────────────────────────────
+let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
-  deferredInstallPrompt = e;
+  deferredPrompt = e;
   document.getElementById('install-bar').classList.add('show');
 });
-
 document.getElementById('install-btn').addEventListener('click', () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then(() => {
-    deferredInstallPrompt = null;
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
     document.getElementById('install-bar').classList.remove('show');
   });
 });
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-bar').classList.remove('show');
+});
 
-// ── Tab switching ──────────────────────────────────────────────────────────
+// ── Tabs ───────────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', ['check','map','manage'][i] === name);
@@ -540,6 +414,7 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'map') setTimeout(() => map.invalidateSize(), 50);
+  closeAllAC();
 }
 
 // ── Map ────────────────────────────────────────────────────────────────────
@@ -548,12 +423,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors', maxZoom: 19
 }).addTo(map);
 
-// ── State ──────────────────────────────────────────────────────────────────
-let bridges = [];
-let routeCoords = [];
-let placingBridge = false;
-let bridgeIdCounter = 0;
-let lastOrigin = null, lastDest = null;
+let routeLayerPrimary = null, routeLayerAlt = null;
 
 const bridgeIcon = L.divIcon({
   className: '',
@@ -567,7 +437,12 @@ const warningIcon = L.divIcon({
   iconSize: [34,34], iconAnchor: [17,17]
 });
 
-// ── Persistence (Firebase) ─────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────
+let bridges = [];
+let placingBridge = false;
+let geoOrigin = null; // { lat, lng } from GPS
+
+// ── Firebase ───────────────────────────────────────────────────────────────
 function saveBridgeToFB(lat, lng, name, height) {
   const { push, bridgesRef } = window._fb;
   return push(bridgesRef, { lat, lng, name: name || '', height: height || '' });
@@ -586,10 +461,8 @@ function clearAllBridgesInFB() {
 function loadBridges() {
   const { onValue, bridgesRef } = window._fb;
   onValue(bridgesRef, snapshot => {
-    // Clear existing markers
     bridges.forEach(b => map.removeLayer(b.marker));
     bridges = [];
-
     const data = snapshot.val();
     if (data) {
       Object.entries(data).forEach(([fbKey, b]) => {
@@ -605,16 +478,10 @@ function loadBridges() {
 }
 
 // ── Bridge management ──────────────────────────────────────────────────────
-function addBridge(lat, lng, name, height) {
-  // Firebase onValue listener will handle updating the UI
-  saveBridgeToFB(lat, lng, name, height);
-}
-
-function removeBridge(fbKey) {
-  removeBridgeFromFB(fbKey);
-}
+function removeBridge(fbKey) { removeBridgeFromFB(fbKey); }
 
 function clearAllBridges() {
+  if (!bridges.length) return;
   if (!confirm(`Remove all ${bridges.length} bridge${bridges.length !== 1 ? 's' : ''}?`)) return;
   clearAllBridgesInFB();
 }
@@ -639,9 +506,9 @@ function renderBridgeList() {
 }
 
 function updateBadge() {
+  const n = bridges.length;
   document.getElementById('bridge-count-badge').textContent =
-    bridges.length === 0 ? 'No bridges' :
-    bridges.length === 1 ? '1 bridge' : `${bridges.length} bridges`;
+    n === 0 ? 'No bridges' : n === 1 ? '1 bridge' : `${n} bridges`;
 }
 
 // ── Place bridge on map ────────────────────────────────────────────────────
@@ -666,7 +533,7 @@ map.on('click', function(e) {
   switchTab('manage');
 });
 
-// ── KML / KMZ Import ──────────────────────────────────────────────────────
+// ── KML / KMZ ─────────────────────────────────────────────────────────────
 function parseKML(xml) {
   const placemarks = xml.querySelectorAll('Placemark');
   let count = 0;
@@ -683,19 +550,14 @@ function parseKML(xml) {
     saveBridgeToFB(lat, lng, name, m ? m[0] : '');
     count++;
   });
-  if (count > 0) {
-    alert(`✅ Imported ${count} bridge${count > 1 ? 's' : ''}.`);
-    if (bridges.length) map.fitBounds(L.featureGroup(bridges.map(b => b.marker)).getBounds().pad(0.1));
-  } else {
-    alert('No point placemarks found in the file.');
-  }
+  if (count > 0) alert(`✅ Imported ${count} bridge${count > 1 ? 's' : ''}.`);
+  else alert('No point placemarks found in the file.');
 }
 
 function importKML(event) {
   const file = event.target.files[0];
   if (!file) return;
   event.target.value = '';
-
   if (file.name.endsWith('.kmz')) {
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -710,7 +572,6 @@ function importKML(event) {
     reader.readAsArrayBuffer(file);
     return;
   }
-
   const reader = new FileReader();
   reader.onload = e => parseKML(new DOMParser().parseFromString(e.target.result, 'text/xml'));
   reader.readAsText(file);
@@ -718,149 +579,288 @@ function importKML(event) {
 
 // ── Geolocation ────────────────────────────────────────────────────────────
 function useMyLocation() {
+  const inp = document.getElementById('origin');
   if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
-  document.getElementById('origin').placeholder = 'Getting location…';
+  inp.placeholder = 'Getting location…';
+  inp.value = '';
   navigator.geolocation.getCurrentPosition(
     pos => {
-      document.getElementById('origin').value = '';
-      document.getElementById('origin').placeholder = 'My location';
-      lastOrigin = { lat: pos.coords.latitude, lng: pos.coords.longitude, isGeo: true };
+      geoOrigin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      inp.placeholder = '📍 My current location';
+      inp.value = '';
     },
-    () => { document.getElementById('origin').placeholder = 'Current location'; }
+    () => { inp.placeholder = 'Start (or tap 📍)'; }
   );
 }
 
-// ── Geocoding ──────────────────────────────────────────────────────────────
-async function geocode(address) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+// ── Autocomplete ───────────────────────────────────────────────────────────
+let acTimers = {};
+let resolvedOrigin = null, resolvedDest = null;
+
+function closeAllAC() {
+  document.querySelectorAll('.autocomplete-list').forEach(el => el.classList.remove('show'));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#input-group')) closeAllAC();
+});
+
+function setupAutocomplete(inputId, acId, onSelect) {
+  const input = document.getElementById(inputId);
+  const ac = document.getElementById(acId);
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    clearTimeout(acTimers[inputId]);
+    if (q.length < 2) { ac.classList.remove('show'); return; }
+    acTimers[inputId] = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const data = await res.json();
+        if (!data.length) { ac.classList.remove('show'); return; }
+        ac.innerHTML = data.map((item, i) => {
+          const main = item.name || item.display_name.split(',')[0];
+          const sub = item.display_name.replace(main + ', ', '').substring(0, 60);
+          return `<div class="autocomplete-item" data-idx="${i}" data-lat="${item.lat}" data-lng="${item.lon}" data-display="${encodeURIComponent(item.display_name)}">
+            <div class="ac-main">${main}</div>
+            <div class="ac-sub">${sub}</div>
+          </div>`;
+        }).join('');
+        ac.classList.add('show');
+        ac.querySelectorAll('.autocomplete-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const display = decodeURIComponent(el.dataset.display);
+            const main = el.querySelector('.ac-main').textContent;
+            input.value = main;
+            onSelect({ lat: parseFloat(el.dataset.lat), lng: parseFloat(el.dataset.lng), display });
+            ac.classList.remove('show');
+          });
+        });
+      } catch(e) {}
+    }, 300);
+  });
+
+  input.addEventListener('focus', () => {
+    if (ac.innerHTML && input.value.trim().length >= 2) ac.classList.add('show');
+  });
+}
+
+setupAutocomplete('origin', 'origin-ac', loc => { resolvedOrigin = loc; geoOrigin = null; });
+setupAutocomplete('destination', 'dest-ac', loc => { resolvedDest = loc; });
+
+// ── Geocode (fallback if no autocomplete selection) ────────────────────────
+async function geocode(q) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
   const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
   const data = await res.json();
-  if (!data.length) throw new Error(`Could not find: "${address}"`);
+  if (!data.length) throw new Error(`Could not find "${q}". Try adding a city or state.`);
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
 }
 
-// ── Route check ────────────────────────────────────────────────────────────
+// ── Route helpers ──────────────────────────────────────────────────────────
+async function fetchRoute(fromLng, fromLat, toLng, toLat, alternatives) {
+  const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson${alternatives ? '&alternatives=true' : ''}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.code !== 'Ok') throw new Error('Could not calculate route.');
+  return data.routes;
+}
+
+function routeCoords(route) {
+  return route.geometry.coordinates.map(c => [c[1], c[0]]);
+}
+
+function buildGmapsUrl(from, to, destText) {
+  const origin = from.isGeo ? `${from.lat},${from.lng}` : (from.display || destText);
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(to.display || destText)}&travelmode=driving`;
+}
+
+function buildGmapsUrlWithWaypoint(from, waypoint, to, destText) {
+  const origin = from.isGeo ? `${from.lat},${from.lng}` : (from.display || '');
+  const wp = `${waypoint[0]},${waypoint[1]}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(to.display || destText)}&waypoints=${encodeURIComponent(wp)}&travelmode=driving`;
+}
+
+// ── Proximity math ─────────────────────────────────────────────────────────
+function ptSegDist(px, py, ax, ay, bx, by) {
+  const dx = bx-ax, dy = by-ay, len = dx*dx+dy*dy;
+  const t = len === 0 ? 0 : Math.max(0, Math.min(1, ((px-ax)*dx+(py-ay)*dy)/len));
+  return Math.sqrt((px-ax-t*dx)**2+(py-ay-t*dy)**2);
+}
+
+function bridgeDistToRoute(bridge, coords, threshold) {
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [a, b] = [coords[i], coords[i+1]];
+    const cosLat = Math.cos(((a[0]+b[0])/2) * Math.PI / 180);
+    const d = ptSegDist(bridge.lng*cosLat, bridge.lat, a[1]*cosLat, a[0], b[1]*cosLat, b[0]) * 69;
+    if (d <= threshold) return d;
+  }
+  return null;
+}
+
+function getBridgesOnRoute(coords, threshold = 0.1) {
+  const hits = [];
+  bridges.forEach(b => {
+    const d = bridgeDistToRoute(b, coords, threshold);
+    if (d !== null) hits.push({ bridge: b, dist: d });
+  });
+  return hits;
+}
+
+// Get midpoint of route for waypoint forcing alternate path
+function getRouteMidpoint(coords) {
+  return coords[Math.floor(coords.length / 2)];
+}
+
+// ── Main route check ───────────────────────────────────────────────────────
 async function checkRoute() {
+  closeAllAC();
   const originVal = document.getElementById('origin').value.trim();
   const destVal = document.getElementById('destination').value.trim();
-  if (!destVal) { showResult('danger', '⚠️ Please enter a destination.', []); return; }
 
+  if (!destVal) { showPrimaryResult('danger', '⚠️ Please enter a destination.', []); return; }
+
+  // Reset UI
   document.getElementById('check-btn').disabled = true;
   document.getElementById('route-loading').classList.add('show');
+  document.getElementById('loading-msg').textContent = 'Checking route for low bridges…';
   document.getElementById('result-card').classList.remove('show');
-  document.getElementById('gmaps-btn').classList.remove('show');
+  document.getElementById('alt-card').classList.remove('show');
+  document.getElementById('route-buttons').classList.remove('show');
+  document.getElementById('gmaps-alt').style.display = 'none';
+
+  // Clear map routes
+  if (routeLayerPrimary) { map.removeLayer(routeLayerPrimary); routeLayerPrimary = null; }
+  if (routeLayerAlt) { map.removeLayer(routeLayerAlt); routeLayerAlt = null; }
+  bridges.forEach(b => b.marker.setIcon(bridgeIcon));
 
   try {
+    // Resolve origin
     let from;
-    if (lastOrigin?.isGeo && !originVal) {
-      from = lastOrigin;
+    if (geoOrigin) {
+      from = { ...geoOrigin, isGeo: true, display: `${geoOrigin.lat},${geoOrigin.lng}` };
+    } else if (resolvedOrigin && originVal) {
+      from = resolvedOrigin;
     } else if (originVal) {
       from = await geocode(originVal);
-      lastOrigin = from;
+      resolvedOrigin = from;
     } else {
-      throw new Error('Enter a starting location or tap 📍 to use your current location.');
+      throw new Error('Enter a start location or tap 📍 for your current location.');
     }
 
-    const to = await geocode(destVal);
-    lastDest = to;
+    // Resolve destination
+    let to;
+    if (resolvedDest && destVal) {
+      to = resolvedDest;
+    } else {
+      to = await geocode(destVal);
+      resolvedDest = to;
+    }
 
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
-    const res = await fetch(osrmUrl);
-    const data = await res.json();
-    if (data.code !== 'Ok') throw new Error('Could not calculate route.');
+    // Fetch primary route + alternatives
+    document.getElementById('loading-msg').textContent = 'Calculating route…';
+    const routes = await fetchRoute(from.lng, from.lat, to.lng, to.lat, true);
+    const primaryCoords = routeCoords(routes[0]);
+    const dist = (routes[0].distance / 1609.34).toFixed(1);
+    const dur = Math.round(routes[0].duration / 60);
 
-    routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    // Draw primary route
+    routeLayerPrimary = L.polyline(primaryCoords, { color: '#4f7ef7', weight: 5, opacity: 0.85 }).addTo(map);
+    map.fitBounds(routeLayerPrimary.getBounds().pad(0.1));
 
-    const warnings = [];
-    const threshold = 0.1;
-    bridges.forEach(b => {
-      const dist = isBridgeNearRoute(b, threshold);
-      if (dist !== null) warnings.push({ bridge: b, dist });
-    });
+    // Check bridges on primary route
+    const warnings = getBridgesOnRoute(primaryCoords);
+    warnings.forEach(w => w.bridge.marker.setIcon(warningIcon));
+
+    const primaryGmapsUrl = buildGmapsUrl(from, to, destVal);
+    document.getElementById('gmaps-primary').href = primaryGmapsUrl;
 
     if (warnings.length === 0) {
-      showResult('safe', '✅ Route looks clear — no low bridges detected.', []);
+      showPrimaryResult('safe', `✅ Route clear — ${dist} mi · ~${dur} min`, []);
+      document.getElementById('gmaps-primary').textContent = '';
+      document.getElementById('gmaps-primary').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Open in Google Maps`;
     } else {
-      showResult('danger',
-        `⚠️ ${warnings.length} low bridge${warnings.length > 1 ? 's' : ''} on this route!`,
+      showPrimaryResult('danger',
+        `⚠️ ${warnings.length} low bridge${warnings.length > 1 ? 's' : ''} on this route (${dist} mi)`,
         warnings
       );
+      document.getElementById('gmaps-primary').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Use Original Route Anyway`;
+      document.getElementById('gmaps-primary').style.background = '#888';
+
+      // Try to find a bridge-free alternate
+      document.getElementById('loading-msg').textContent = 'Searching for bridge-free alternate…';
+      document.getElementById('route-loading').classList.add('show');
+
+      let altFound = false;
+
+      // Check OSRM alternatives first
+      for (let i = 1; i < routes.length; i++) {
+        const altC = routeCoords(routes[i]);
+        const altWarnings = getBridgesOnRoute(altC);
+        if (altWarnings.length === 0) {
+          const altDist = (routes[i].distance / 1609.34).toFixed(1);
+          const altDur = Math.round(routes[i].duration / 60);
+          routeLayerAlt = L.polyline(altC, { color: '#27ae60', weight: 5, opacity: 0.8, dashArray: '10,6' }).addTo(map);
+          showAltResult(`✅ Bridge-free alternate found — ${altDist} mi · ~${altDur} min`, '');
+          const mid = getRouteMidpoint(altC);
+          const altUrl = buildGmapsUrlWithWaypoint(from, mid, to, destVal);
+          document.getElementById('gmaps-alt').href = altUrl;
+          document.getElementById('gmaps-alt').style.display = 'flex';
+          altFound = true;
+          break;
+        }
+      }
+
+      if (!altFound) {
+        showAltResult('', 'No automatic alternate found. Consider adjusting your route manually in Google Maps to avoid the bridges listed above.');
+      }
     }
 
-    // Build Google Maps URL
-    const gmapsUrl = lastOrigin.isGeo
-      ? `https://www.google.com/maps/dir/?api=1&origin=${from.lat},${from.lng}&destination=${encodeURIComponent(destVal)}&travelmode=driving`
-      : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originVal)}&destination=${encodeURIComponent(destVal)}&travelmode=driving`;
-
-    const gmapsBtn = document.getElementById('gmaps-btn');
-    gmapsBtn.href = gmapsUrl;
-    gmapsBtn.classList.add('show');
+    document.getElementById('route-buttons').classList.add('show');
 
   } catch(err) {
-    showResult('danger', '❌ ' + err.message, []);
+    showPrimaryResult('danger', '❌ ' + err.message, []);
   } finally {
     document.getElementById('route-loading').classList.remove('show');
     document.getElementById('check-btn').disabled = false;
   }
 }
 
-function showResult(type, headline, warnings) {
+function showPrimaryResult(type, headline, warnings) {
   const card = document.getElementById('result-card');
-  const header = document.getElementById('result-header');
-  const list = document.getElementById('warning-list');
-
-  header.className = 'result-header result-' + type;
-  header.textContent = headline;
-
-  list.innerHTML = warnings.map(w => `
+  document.getElementById('result-header').className = 'result-header result-' + type;
+  document.getElementById('result-header').textContent = headline;
+  document.getElementById('warning-list').innerHTML = warnings.map(w => `
     <div class="warning-item">
       <strong>${w.bridge.name || 'Unnamed Bridge'}</strong>
       <span>Clearance: ${w.bridge.height || 'Unknown'} · ~${(w.dist * 5280).toFixed(0)} ft from route</span>
     </div>
   `).join('');
-
   card.classList.add('show');
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// ── Bridge proximity math ──────────────────────────────────────────────────
-function pointToSegmentDist(px, py, ax, ay, bx, by) {
-  const dx = bx-ax, dy = by-ay;
-  const lenSq = dx*dx + dy*dy;
-  let t = lenSq === 0 ? 0 : ((px-ax)*dx + (py-ay)*dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  return Math.sqrt((px-(ax+t*dx))**2 + (py-(ay+t*dy))**2);
-}
-
-function isBridgeNearRoute(bridge, threshold) {
-  for (let i = 0; i < routeCoords.length - 1; i++) {
-    const [a, b] = [routeCoords[i], routeCoords[i+1]];
-    const latMid = (a[0]+b[0])/2;
-    const cosLat = Math.cos(latMid * Math.PI / 180);
-    const degDist = pointToSegmentDist(
-      bridge.lng * cosLat, bridge.lat,
-      a[1] * cosLat, a[0],
-      b[1] * cosLat, b[0]
-    );
-    if (degDist / (1/69.0) <= threshold) return degDist / (1/69.0);
-  }
-  return null;
+function showAltResult(headline, body) {
+  const card = document.getElementById('alt-card');
+  const h = document.getElementById('alt-header');
+  const b = document.getElementById('alt-body');
+  if (headline) { h.textContent = headline; h.style.display = 'block'; } else { h.style.display = 'none'; }
+  b.textContent = body;
+  card.classList.add('show');
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
-document.getElementById('destination').addEventListener('keydown', e => { if (e.key === 'Enter') checkRoute(); });
+document.getElementById('destination').addEventListener('keydown', e => { if (e.key === 'Enter') { closeAllAC(); checkRoute(); } });
+document.getElementById('origin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('destination').focus(); });
 
-// ── CSS animations ─────────────────────────────────────────────────────────
+// ── CSS ────────────────────────────────────────────────────────────────────
 const s = document.createElement('style');
 s.textContent = `@keyframes pulse { from { box-shadow:0 2px 10px rgba(255,107,53,0.4); } to { box-shadow:0 2px 20px rgba(255,107,53,0.9); } }`;
 document.head.appendChild(s);
 
 // ── Init ───────────────────────────────────────────────────────────────────
-if (window._fbReady) {
-  loadBridges();
-} else {
-  window.addEventListener('fb-ready', loadBridges, { once: true });
-}
+if (window._fbReady) loadBridges();
+else window.addEventListener('fb-ready', loadBridges, { once: true });
 </script>
 </body>
 </html>
