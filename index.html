@@ -605,6 +605,27 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#input-group')) closeAllAC();
 });
 
+// Photon (Komoot) — handles school names, street addresses, POIs far better than Nominatim
+async function photonSearch(q, bias) {
+  let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=en`;
+  if (bias) url += `&lat=${bias.lat}&lon=${bias.lng}&zoom=12`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return (data.features || []).map(f => {
+    const p = f.properties;
+    const parts = [p.name, p.street && p.housenumber ? `${p.housenumber} ${p.street}` : p.street, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
+    const main = p.name || (p.housenumber ? `${p.housenumber} ${p.street}` : p.street) || parts[0];
+    const sub = parts.slice(p.name ? 1 : 2).join(', ').substring(0, 70);
+    return {
+      lat: f.geometry.coordinates[1],
+      lng: f.geometry.coordinates[0],
+      display: parts.join(', '),
+      main,
+      sub
+    };
+  }).filter(r => r.main);
+}
+
 function setupAutocomplete(inputId, acId, onSelect) {
   const input = document.getElementById(inputId);
   const ac = document.getElementById(acId);
@@ -615,24 +636,20 @@ function setupAutocomplete(inputId, acId, onSelect) {
     if (q.length < 2) { ac.classList.remove('show'); return; }
     acTimers[inputId] = setTimeout(async () => {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1`;
-        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-        const data = await res.json();
-        if (!data.length) { ac.classList.remove('show'); return; }
-        ac.innerHTML = data.map((item, i) => {
-          const main = item.name || item.display_name.split(',')[0];
-          const sub = item.display_name.replace(main + ', ', '').substring(0, 60);
-          return `<div class="autocomplete-item" data-idx="${i}" data-lat="${item.lat}" data-lng="${item.lon}" data-display="${encodeURIComponent(item.display_name)}">
-            <div class="ac-main">${main}</div>
-            <div class="ac-sub">${sub}</div>
-          </div>`;
-        }).join('');
+        const bias = geoOrigin || resolvedOrigin;
+        const results = await photonSearch(q, bias);
+        if (!results.length) { ac.classList.remove('show'); return; }
+        ac.innerHTML = results.map((r, i) =>
+          `<div class="autocomplete-item" data-i="${i}" data-lat="${r.lat}" data-lng="${r.lng}" data-display="${encodeURIComponent(r.display)}">
+            <div class="ac-main">${r.main}</div>
+            ${r.sub ? `<div class="ac-sub">${r.sub}</div>` : ''}
+          </div>`
+        ).join('');
         ac.classList.add('show');
         ac.querySelectorAll('.autocomplete-item').forEach(el => {
           el.addEventListener('click', () => {
             const display = decodeURIComponent(el.dataset.display);
-            const main = el.querySelector('.ac-main').textContent;
-            input.value = main;
+            input.value = el.querySelector('.ac-main').textContent;
             onSelect({ lat: parseFloat(el.dataset.lat), lng: parseFloat(el.dataset.lng), display });
             ac.classList.remove('show');
           });
@@ -642,20 +659,19 @@ function setupAutocomplete(inputId, acId, onSelect) {
   });
 
   input.addEventListener('focus', () => {
-    if (ac.innerHTML && input.value.trim().length >= 2) ac.classList.add('show');
+    if (ac.children.length && input.value.trim().length >= 2) ac.classList.add('show');
   });
 }
 
 setupAutocomplete('origin', 'origin-ac', loc => { resolvedOrigin = loc; geoOrigin = null; });
 setupAutocomplete('destination', 'dest-ac', loc => { resolvedDest = loc; });
 
-// ── Geocode (fallback if no autocomplete selection) ────────────────────────
+// ── Geocode fallback (user hits Check Route without selecting autocomplete) ─
 async function geocode(q) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-  const data = await res.json();
-  if (!data.length) throw new Error(`Could not find "${q}". Try adding a city or state.`);
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+  const bias = geoOrigin || resolvedOrigin;
+  const results = await photonSearch(q, bias);
+  if (!results.length) throw new Error(`Could not find "${q}". Try adding a city or state.`);
+  return results[0];
 }
 
 // ── Route helpers ──────────────────────────────────────────────────────────
